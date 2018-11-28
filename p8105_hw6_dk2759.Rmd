@@ -92,8 +92,8 @@ fit_logr_cities %>%
 Create a plot that shows the estimated ORs and CIs for each city. Organize cities according to estimated OR, and comment on the plot.
 
 ```{r plot_cities}
-fit_logr_cities %>% 
-  arrange(desc(OR)) %>% 
+fit_logr_cities = fit_logr_cities %>% 
+  arrange(-desc(OR)) %>% 
   mutate(city_state = fct_inorder(city_state))
   
 ggplot(fit_logr_cities, aes(x = city_state, y = OR )) + 
@@ -109,7 +109,7 @@ ggplot(fit_logr_cities, aes(x = city_state, y = OR )) +
   )
 ```
 
-The graph 
+Most of the cities have an OR that crosses 1 which means there is no statistical significance for unsolved crime for non-whites vs whites. However for cities that have a OR less than 1, the likelihood of a non-white victims homicide being resolved is statistically less likely than a white victims case (see Boston, Omaha, Oakland as the 3 least likely cities). Tampa has the highest OR, Los Vegas and Oklahoma City have the highest ORs which a CI under 1.
 
 
 ### Problem 2
