@@ -8,7 +8,7 @@ output: github_document
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(modelr)
-#set.seed(1)
+set.seed(1)
 ```
 
 http://p8105.com/homework_6.html
@@ -72,8 +72,10 @@ Now run glm for each of the cities in your dataset, and extract the adjusted odd
 fit_logr_cities = homicide_df %>% 
   group_by(city_state) %>%
   nest() %>% 
-  mutate(models = map(.x = data, ~ glm(resolved ~ victim_sex + victim_race + victim_age, data = .x,
-                                      family = binomial)),
+  mutate(models = map(.x = data, 
+                      ~ glm(resolved ~ victim_sex + victim_race + victim_age, 
+                            data = .x,
+                            family = binomial)),
          models = map(models, broom::tidy)) %>% 
   select(-data) %>% 
   unnest() %>%
@@ -83,9 +85,6 @@ fit_logr_cities = homicide_df %>%
          lower_95ci = exp(estimate - 1.96*std_error), 
          upper_95ci = exp(estimate + 1.96*std_error)) %>%
   select(city_state, OR, lower_95ci, upper_95ci)
-#table of cities with OR and CI
-fit_logr_cities %>% 
-  knitr::kable(digits = 3)
 ```
 
 
@@ -111,11 +110,11 @@ ggplot(fit_logr_cities, aes(x = city_state, y = OR )) +
 
 Most of the cities have an OR that crosses 1 which means there is no statistical significance for unsolved crime for non-whites vs whites. However for cities that have a OR less than 1, the likelihood of a non-white victims homicide being resolved is statistically less likely than a white victims case (see Boston, Omaha, Oakland as the 3 least likely cities). Tampa has the highest OR, Los Vegas and Oklahoma City have the highest ORs which a CI under 1.
 
-
 ### Problem 2
+
 In this problem, you will analyze data gathered to understand the effects of several variables on a child’s birthweight. This dataset, available [here](http://p8105.com/data/birthweight.csv) consists of roughly 4000 children.
 
-```{r import}
+```{r import_bwt}
 birthweight_df = read_csv("http://p8105.com/data/birthweight.csv") %>% 
   janitor::clean_names() %>% 
     mutate(
@@ -146,19 +145,42 @@ Plot model 1 residuals against fitted values – use add_predictions and add_res
 
 ```{r model 1 plot}
 birthweight_df %>% 
-  modelr::add_predictions(my_proposed_fit) %>% 
-  modelr::add_residuals(my_proposed_fit) %>% 
+  modelr::add_predictions(model_1) %>% 
+  modelr::add_residuals(model_1) %>% 
   ggplot(aes(x = pred, y = resid)) + geom_point() +
   labs(x = "Predicted value", 
        y = "Residual")
 ```
 
+### Compare model to two others:
 
-Compare your model to two others:
-
+Using two other models to cross validate my own prediction model.
 One using length at birth and gestational age as predictors (main effects only)
-One using head circumference, length, sex, and all interactions (including the three-way interaction) between these
+
+```{r model 2}
+length_age_fit = lm(bwt ~ blength + gaweeks, data = birthweight_df)
+length_age_fit %>% 
+  broom::tidy()
+```
+
+One using head circumference, length, sex, and all interactions (including the three-way interaction)
+
+```{r model 3}
+hc_length_sex_fit = lm(bwt ~ bhead * blength * babysex, data = birthweight_df)
+hc_length_sex_fit %>% 
+  broom::tidy()
+```
+
 Make this comparison in terms of the cross-validated prediction error; use crossv_mc and functions in purrr as appropriate.
 
-Note that although we expect your model to be reasonable, model building itself is not a main idea of the course and we don’t necessarily expect your model to be “optimal”.
+## Cross Validation
+
+```{r cross validation}
+cv_df =
+  crossv_mc(birthweight_df, 100) %>% 
+  mutate(train = map(train, as_tibble),
+         test = map(test, as_tibble))
+```
+
+
 
